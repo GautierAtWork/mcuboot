@@ -13,6 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+//#define FLASH_DEV_NAME "foo_flash0"
+//#define FLASH_AREA_IMAGE_0_OFFSET
+//#define FLASH_AREA_IMAGE_0_SIZE
+//#define FLASH_AREA_IMAGE_1_OFFSET
+//#define FLASH_AREA_IMAGE_1_SIZE
+//#define FLASH_AREA_IMAGE_SCRATCH_OFFSET
+//#xsxsdefine FLASH_AREA_IMAGE_SCRATCH_SIZE
 
 #include <assert.h>
 #include <zephyr.h>
@@ -22,7 +29,6 @@
 #include <drivers/system_timer.h>
 
 #include "target.h"
-
 #define BOOT_LOG_LEVEL BOOT_LOG_LEVEL_INFO
 #include "bootutil/bootutil_log.h"
 #include "bootutil/image.h"
@@ -32,6 +38,43 @@
 #ifdef CONFIG_MCUBOOT_SERIAL
 #include <boot_serial/boot_serial.h>
 #endif
+
+
+
+/* define our esp32 flash device here */
+
+static const struct flash_driver_api esp32_mmap_flash_api = {
+	.read = NULL, //esp32_mmap_flash_read,
+	.write = NULL, //esp32_mmap_flash_write,
+	.erase = NULL, //esp32_mmap_flash_erase,
+	.write_protection = NULL, //esp32_flash_write_protection,
+#if defined(CONFIG_FLASH_PAGE_LAYOUT)
+	.page_layout = NULL, //esp32_flash_pages_layout,
+#endif
+	.write_block_size = 1,
+};
+
+static int esp32_mmap_flash_init(struct device *dev)
+{
+	dev->driver_api = &esp32_mmap_flash_api;
+
+	return 0;
+}
+DEVICE_INIT(esp32_mmap_flash, "foo_flash", esp32_mmap_flash_init,
+			NULL, NULL, POST_KERNEL, CONFIG_KERNEL_INIT_PRIORITY_DEVICE);
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 struct device *boot_flash_device;
 
@@ -116,7 +159,7 @@ void main(void)
                             GPIO_DIR_IN | GPIO_PUD_PULL_UP);
     __ASSERT(rc, "Error of boot detect pin initialization.\n");
 
-    rc = gpio_pin_read(detect_port, CONFIG_BOOT_SERIAL_DETECT_PIN, 
+    rc = gpio_pin_read(detect_port, CONFIG_BOOT_SERIAL_DETECT_PIN,
                        &detect_value);
     __ASSERT(rc, "Error of the reading the detect pin.\n");
 
